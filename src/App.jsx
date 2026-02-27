@@ -2,12 +2,26 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const RARITIES = [
-  { name:"Common",    color:"#9CA3AF", glow:"#9CA3AF", bg:"#1f2937", baseChance:45 },
-  { name:"Uncommon",  color:"#34D399", glow:"#34D399", bg:"#064e3b", baseChance:25 },
-  { name:"Rare",      color:"#60A5FA", glow:"#60A5FA", bg:"#1e3a5f", baseChance:15 },
-  { name:"Epic",      color:"#A78BFA", glow:"#A78BFA", bg:"#2e1065", baseChance:9  },
-  { name:"Legendary", color:"#FBBF24", glow:"#FBBF24", bg:"#451a03", baseChance:4  },
-  { name:"Mythic",    color:"#F87171", glow:"#F87171", bg:"#450a0a", baseChance:2  },
+  { name:"Common",      color:"#9CA3AF", glow:"#9CA3AF", bg:"#1f2937",   baseChance:32,      special:false },
+  { name:"Uncommon",    color:"#34D399", glow:"#34D399", bg:"#064e3b",   baseChance:22,      special:false },
+  { name:"Rare",        color:"#60A5FA", glow:"#60A5FA", bg:"#1e3a5f",   baseChance:15,      special:false },
+  { name:"Epic",        color:"#A78BFA", glow:"#A78BFA", bg:"#2e1065",   baseChance:10,      special:false },
+  { name:"Legendary",   color:"#FBBF24", glow:"#FBBF24", bg:"#451a03",   baseChance:6,       special:false },
+  { name:"Mythic",      color:"#F87171", glow:"#F87171", bg:"#450a0a",   baseChance:4,       special:false },
+  { name:"Ancient",     color:"#A16207", glow:"#D97706", bg:"#1c0f00",   baseChance:3,       special:false },
+  { name:"Celestial",   color:"#67E8F9", glow:"#22D3EE", bg:"#0a1f2e",   baseChance:2,       special:false },
+  { name:"Infernal",    color:"#FF6B00", glow:"#FF6B00", bg:"#1f0800",   baseChance:1.5,     special:false },
+  { name:"Phantom",     color:"#C4B5FD", glow:"#8B5CF6", bg:"#150d2e",   baseChance:1.2,     special:false },
+  { name:"Crystalline", color:"#BAE6FD", glow:"#7DD3FC", bg:"#0a1825",   baseChance:0.9,     special:false },
+  { name:"Void",        color:"#6366F1", glow:"#4F46E5", bg:"#0c0c25",   baseChance:0.6,     special:false },
+  { name:"Cosmic",      color:"#F0ABFC", glow:"#D946EF", bg:"#1a0020",   baseChance:0.4,     special:false },
+  { name:"Ethereal",    color:"#99F6E4", glow:"#2DD4BF", bg:"#001a16",   baseChance:0.25,    special:false },
+  { name:"Abyssal",     color:"#1D4ED8", glow:"#1D4ED8", bg:"#000818",   baseChance:0.15,    special:false },
+  { name:"Primal",      color:"#BEF264", glow:"#84CC16", bg:"#0d1a00",   baseChance:0.09,    special:false },
+  { name:"Secret",      color:"#E879F9", glow:"#E879F9", bg:"#2d0a3a",   baseChance:0.06,    special:true  },
+  { name:"Transcendent",color:"#FCD34D", glow:"#F59E0B", bg:"#1a1000",   baseChance:0.025,   special:true  },
+  { name:"Omega",       color:"#F43F5E", glow:"#E11D48", bg:"#1a000a",   baseChance:0.01,    special:true  },
+  { name:"God",         color:"#FFFDE7", glow:"#FFD700", bg:"#1a1500",   baseChance:0.003,   special:true  },
 ];
 const CUBE_NAMES = [
   "Frostbite","Inferno","Voidwalker","Thunderclap","Earthquake","Starlight",
@@ -110,23 +124,77 @@ function localSet(key, value) {
 // ─── CUBE 3D ─────────────────────────────────────────────────────────────────
 function Cube3D({ cube, size = 40, animated = false, spin = false }) {
   const lvlStr = cube.level >= 1000 ? `${(cube.level/1000).toFixed(1)}K` : String(cube.level);
+  const isSecret = cube.rarity.name === "Secret";
+  const isGod    = cube.rarity.name === "God";
+
+  const wrapClass = isSecret ? "secret-cube" : isGod ? "god-cube" : "";
+
+  const bgStyle = isGod
+    ? "linear-gradient(135deg,#FFD700,#FFF8DC,#FFD700,#DAA520)"
+    : isSecret
+    ? "linear-gradient(135deg,#7B2FBE,#E879F9,#A855F7,#7B2FBE)"
+    : `linear-gradient(135deg,${cube.shape.color},${cube.shape.face})`;
+
+  const textColor = isGod ? "#3d2800" : "white";
+  const textShadow = isGod
+    ? `0 0 ${size*0.15}px #FFD700, 0 1px 3px rgba(0,0,0,0.6)`
+    : isSecret
+    ? `0 0 ${size*0.2}px #E879F9, 0 0 ${size*0.1}px white`
+    : `0 0 ${size*0.2}px rgba(0,0,0,0.9)`;
+
   return (
-    <div style={{
-      position: "relative", width: size, height: size, flexShrink: 0,
-      transform: (!animated && !spin) ? `perspective(200px) rotateX(15deg) rotateY(-20deg)` : undefined,
-      filter: `drop-shadow(0 0 ${size * 0.2}px ${cube.rarity.glow}88)`,
-      animation: spin ? "cubeSpin 3s linear infinite" : undefined,
-    }}>
+    <div
+      className={wrapClass}
+      style={{
+        position: "relative", width: size, height: size, flexShrink: 0,
+        transform: (!animated && !spin) ? `perspective(200px) rotateX(15deg) rotateY(-20deg)` : undefined,
+        filter: isGod
+          ? `drop-shadow(0 0 ${size*0.4}px #FFD700) drop-shadow(0 0 ${size*0.2}px #fff8)`
+          : `drop-shadow(0 0 ${size*0.2}px ${cube.rarity.glow}88)`,
+        animationDuration: spin ? "3s" : undefined,
+        animation: spin ? "cubeSpin 3s linear infinite" : undefined,
+        borderRadius: size * 0.12,
+      }}>
       <div style={{
         position: "absolute", width: size, height: size,
-        background: `linear-gradient(135deg,${cube.shape.color},${cube.shape.face})`,
-        borderRadius: size * 0.12, border: `2px solid ${cube.rarity.color}77`,
-        boxShadow: `inset 0 0 ${size*0.3}px rgba(255,255,255,0.2),0 0 ${size*0.4}px ${cube.rarity.glow}44`,
+        background: bgStyle,
+        backgroundSize: isGod ? "300% 300%" : undefined,
+        animation: isGod ? "godShine 2s ease infinite" : undefined,
+        borderRadius: size * 0.12,
+        border: isGod ? `2px solid #FFD700` : isSecret ? `2px solid #E879F9` : `2px solid ${cube.rarity.color}77`,
+        boxShadow: isGod
+          ? `inset 0 0 ${size*0.4}px rgba(255,255,255,0.6)`
+          : isSecret
+          ? `inset 0 0 ${size*0.3}px rgba(255,255,255,0.3)`
+          : `inset 0 0 ${size*0.3}px rgba(255,255,255,0.2),0 0 ${size*0.4}px ${cube.rarity.glow}44`,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: size * (lvlStr.length > 3 ? 0.2 : 0.28), fontWeight: 900, color: "white",
-        textShadow: `0 0 ${size*0.2}px rgba(0,0,0,0.9)`,
-        fontFamily: "monospace", userSelect: "none",
-      }}>{lvlStr}</div>
+        fontSize: size * (lvlStr.length > 3 ? 0.2 : 0.28), fontWeight: 900,
+        color: textColor, textShadow, fontFamily: "monospace", userSelect: "none",
+      }}>
+        {isGod ? "✦" : lvlStr}
+        {isGod && <span style={{position:"absolute",bottom:2,fontSize:size*0.18,opacity:0.9}}>{lvlStr}</span>}
+      </div>
+      {/* Secret sparkle particles */}
+      {isSecret && (
+        <>
+          {[0,1,2].map(i=>(
+            <div key={i} style={{
+              position:"absolute",
+              width:size*0.08, height:size*0.08,
+              borderRadius:"50%",
+              background:"#E879F9",
+              top:`${[10,70,40][i]}%`, left:`${[80,15,90][i]}%`,
+              animation:`sparkle ${1+i*0.4}s ease-in-out infinite`,
+              animationDelay:`${i*0.3}s`,
+              boxShadow:`0 0 4px #E879F9`,
+            }}/>
+          ))}
+        </>
+      )}
+      {/* God crown */}
+      {isGod && (
+        <div style={{position:"absolute",top:-size*0.22,left:"50%",transform:"translateX(-50%)",fontSize:size*0.3,filter:"drop-shadow(0 0 4px #FFD700)",animation:"float 2s ease-in-out infinite"}}>👑</div>
+      )}
     </div>
   );
 }
@@ -381,6 +449,10 @@ function Game({ username, onLogout }) {
   // Keep stateRef current
   useEffect(()=>{ stateRef.current = {coins,upgrades,world,boxes,stats}; });
 
+  // persistRef so bot useEffect can call latest persist without re-running
+  const persistRef = useRef(persist);
+  useEffect(()=>{ persistRef.current = persist; },[persist]);
+
   // Auto-save
   useEffect(()=>{ const t=setInterval(()=>persist(),8000); return ()=>clearInterval(t); },[persist]);
 
@@ -414,6 +486,111 @@ function Game({ username, onLogout }) {
     },1000);
     return ()=>clearInterval(t);
   },[]);
+
+  // ── BOT SYSTEM ──
+  useEffect(()=>{
+    const BOT_NAMES = [
+      "CubeBot_Rex","TraderAI","MarketBot","VaultBot","NexusBot","CubeOracle",
+      "AutoTrader","BotMaster","CubeLord","QuantumBot","NightTrader","StarVault",
+      "PrismaBot","VoidSeeker","LegendBot","MysticMart","CubeKing","DataTrader",
+      "SwiftBot","ArcaneMkt","DeepVault","OmegaBot","CosmicDeal","ShadowTrade",
+      "CrystalBot","GildedBot","InfernoBot","CelestBot","AbyssalBot","PrimalBot",
+    ];
+    let botCounter = 9000;
+    const BOT_MAX_BUY_PRICE = 50000;
+    const BOT_MAX_LIST_PRICE = 80000;
+    const MAX_BOT_LISTINGS = 500; // bots flood the market with up to 500 cubes
+
+    const makeBotCube = (idSuffix) => {
+      // Weighted toward common/uncommon but can hit up to Abyssal (index 14)
+      const maxBotRarityIdx = RARITIES.length - 5; // no Secret, Transcendent, Omega, God
+      const roll = Math.random();
+      // Exponential weighting: most cubes are low rarity
+      const ri = Math.min(maxBotRarityIdx, Math.floor(-Math.log(Math.random()) * 2.5));
+      const rarity = RARITIES[Math.min(ri, maxBotRarityIdx)];
+      const shape = CUBE_SHAPES[Math.floor(Math.random() * CUBE_SHAPES.length)];
+      const cubeName = CUBE_NAMES[Math.floor(Math.random() * CUBE_NAMES.length)];
+      const level = Math.floor(Math.random() * 150) + 1;
+      const rarityIdx = RARITIES.indexOf(rarity);
+      const mult = (rarityIdx + 1) * (1 + Math.floor(level / 100) * 0.5);
+      const baseValue = Math.floor(level * mult * 12);
+      const price = Math.min(BOT_MAX_LIST_PRICE, Math.max(10, Math.floor(baseValue * (0.55 + Math.random() * 0.4))));
+      const cube = {
+        id: `bot_${idSuffix}`, name: cubeName, level, rarity, shape,
+        value: baseValue, income: Math.floor(level * mult * 0.8),
+        x: Math.random()*65+10, y: Math.random()*50+15,
+        purchased: false, angle: Math.random()*40-20,
+      };
+      return { cube, price };
+    };
+
+    const runBots = async () => {
+      try {
+        let market = await sharedGet(MARKET_KEY) || [];
+        const now = Date.now();
+        let changed = false;
+
+        // 1. Remove stale bot listings older than 5 minutes
+        const beforeLen = market.length;
+        market = market.filter(l => !l.isBot || (now - l.listedAt) < 5 * 60 * 1000);
+        if (market.length !== beforeLen) changed = true;
+
+        // 2. Bots buy cheap player listings (price ≤ BOT_MAX_BUY_PRICE)
+        const affordable = market.filter(l => !l.isBot && l.price <= BOT_MAX_BUY_PRICE && l.seller !== username);
+        // Each tick, bots may buy up to 3 cheap listings
+        const buyCount = Math.min(affordable.length, Math.floor(Math.random() * 3) + (Math.random() < 0.5 ? 1 : 0));
+        const toBuy = affordable.sort(()=>Math.random()-0.5).slice(0, buyCount);
+        for (const target of toBuy) {
+          market = market.filter(l => l.id !== target.id);
+          changed = true;
+          if (target.seller === username) {
+            const buyerBot = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+            const soldCube = deserCube(target.cube);
+            setCoins(c => {
+              const nc = c + target.price;
+              persistRef.current({ coins: nc });
+              return nc;
+            });
+            setNotification({ msg: `🤖 ${buyerBot} bought your ${soldCube.name} for 🪙${target.price.toLocaleString()}!`, color: "#34D399" });
+            setTimeout(() => setNotification(null), 4000);
+          }
+        }
+
+        // 3. Flood market with bot listings up to MAX_BOT_LISTINGS
+        const currentBotCount = market.filter(l => l.isBot).length;
+        const toList = MAX_BOT_LISTINGS - currentBotCount;
+        if (toList > 0) {
+          // Add up to 30 new listings per tick to fill up to 500
+          const addCount = Math.min(toList, 30);
+          for (let i = 0; i < addCount; i++) {
+            const botName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+            const { cube, price } = makeBotCube(++botCounter);
+            market.push({
+              id: `bot_${botName}_${now}_${i}`,
+              seller: botName,
+              isBot: true,
+              cube: serCube(cube),
+              price,
+              listedAt: now - Math.floor(Math.random() * 200000), // stagger times
+            });
+          }
+          changed = true;
+        }
+
+        if (changed) {
+          await sharedSet(MARKET_KEY, market);
+          setMarket(market.map(item => ({...item, cube: deserCube(item.cube)})));
+        }
+      } catch(_) {}
+    };
+
+    // Run bots every 12 seconds
+    const botInterval = setInterval(runBots, 12000);
+    // Run once shortly after mount
+    const initTimeout = setTimeout(runBots, 3000);
+    return () => { clearInterval(botInterval); clearTimeout(initTimeout); };
+  // eslint-disable-next-line
+  }, [username]);
 
   // Load market
   const loadMarket = useCallback(async()=>{
@@ -566,6 +743,12 @@ function Game({ username, onLogout }) {
         @keyframes sparkle{0%,100%{opacity:1}50%{opacity:0.2}}
         @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
         @keyframes beltMove{from{background-position-x:0}to{background-position-x:40px}}
+        @keyframes secretGlow{0%,100%{box-shadow:0 0 12px #E879F9,0 0 30px #E879F944}50%{box-shadow:0 0 24px #E879F9,0 0 60px #E879F988,0 0 100px #E879F922}}
+        @keyframes godGlow{0%{box-shadow:0 0 20px #FFD700,0 0 50px #FFD70066;filter:brightness(1)}50%{box-shadow:0 0 40px #FFD700,0 0 100px #FFD700aa,0 0 160px #FFD70033;filter:brightness(1.3)}100%{box-shadow:0 0 20px #FFD700,0 0 50px #FFD70066;filter:brightness(1)}}
+        @keyframes secretRainbow{0%{border-color:#E879F9}25%{border-color:#A78BFA}50%{border-color:#F87171}75%{border-color:#60A5FA}100%{border-color:#E879F9}}
+        @keyframes godShine{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+        .secret-cube{animation:secretGlow 2s ease-in-out infinite,secretRainbow 3s linear infinite!important}
+        .god-cube{animation:godGlow 1.5s ease-in-out infinite!important}
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         .cc{transition:all 0.2s;cursor:pointer}.cc:hover{transform:scale(1.07) translateY(-3px)}
         .nb{border:none;cursor:pointer;font-family:'Segoe UI',sans-serif;font-weight:800;letter-spacing:0.5px;transition:all 0.15s;text-transform:uppercase}
@@ -740,16 +923,28 @@ function Game({ username, onLogout }) {
 
             {/* Box */}
             <div style={{background:"linear-gradient(135deg,#1a0a2e,#0d0a1a)",border:`2px solid ${boxes.length>0?"#A78BFA55":"#1e1e3a"}`,borderRadius:18,transition:"all 0.3s",boxShadow:boxes.length>0?"0 0 28px #A78BFA18":"none"}}>
-              <div style={{padding:"12px 18px",borderBottom:"1px solid #2e106544",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{padding:"12px 18px",borderBottom:"1px solid #2e106544",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                 <div>
                   <div style={{fontSize:14,fontWeight:800,color:"#A78BFA"}}>📦 FORTUNE BOX</div>
                   <div style={{fontSize:9,color:"#4B5563",marginTop:1}}>Throw into World → Buy → then Sell on Market</div>
                 </div>
-                {boxes.length>0&&(
-                  <button className="nb" onClick={()=>setBoxOpen(!boxOpen)} style={{background:boxOpen?"linear-gradient(135deg,#7c3aed,#5b21b6)":"linear-gradient(135deg,#A78BFA,#7c3aed)",color:"white",padding:"6px 14px",borderRadius:9,fontSize:10}}>
-                    {boxOpen?"🔒 CLOSE":`📬 OPEN (${boxes.length})`}
-                  </button>
-                )}
+                <div style={{display:"flex",gap:7,alignItems:"center"}}>
+                  {boxes.length>0&&(
+                    <button className="nb" onClick={()=>{
+                      if(!window.confirm(`Discard ALL ${boxes.length} cubes? This cannot be undone.`)) return;
+                      setBoxes([]); setSelectedCube(null); setBoxOpen(false);
+                      persist({boxes:[]});
+                      notify(`🗑️ Discarded ${boxes.length} cubes`,"#9CA3AF");
+                    }} style={{background:"linear-gradient(135deg,#374151,#1f2937)",color:"#F87171",border:"1px solid #F8717133",padding:"6px 11px",borderRadius:9,fontSize:10}}>
+                      🗑️ ALL
+                    </button>
+                  )}
+                  {boxes.length>0&&(
+                    <button className="nb" onClick={()=>setBoxOpen(!boxOpen)} style={{background:boxOpen?"linear-gradient(135deg,#7c3aed,#5b21b6)":"linear-gradient(135deg,#A78BFA,#7c3aed)",color:"white",padding:"6px 14px",borderRadius:9,fontSize:10}}>
+                      {boxOpen?"🔒 CLOSE":`📬 OPEN (${boxes.length})`}
+                    </button>
+                  )}
+                </div>
               </div>
               {!boxOpen&&(
                 <div style={{padding:24,textAlign:"center"}}>
@@ -970,26 +1165,48 @@ function Game({ username, onLogout }) {
                   const canBuy = !isMine && coins>=listing.price;
                   return (
                     <div key={listing.id} style={{
-                      background:`linear-gradient(135deg,${cube.rarity.bg},#080c14)`,
-                      border:`2px solid ${isMine?cube.rarity.color+"88":cube.rarity.color+"44"}`,
-                      borderRadius:16,padding:"16px",
-                      boxShadow:isMine?`0 0 20px ${cube.rarity.glow}22`:"none",
-                      transition:"all 0.2s",
+                      background: cube.rarity.name==="God"
+                        ? "linear-gradient(135deg,#1a1500,#2d2400,#1a1500)"
+                        : cube.rarity.name==="Secret"
+                        ? "linear-gradient(135deg,#1a0826,#2d0a3a,#1a0826)"
+                        : `linear-gradient(135deg,${cube.rarity.bg},#080c14)`,
+                      border: cube.rarity.name==="God"
+                        ? "2px solid #FFD700"
+                        : cube.rarity.name==="Secret"
+                        ? "2px solid #E879F9"
+                        : `2px solid ${isMine?cube.rarity.color+"88":cube.rarity.color+"44"}`,
+                      borderRadius:16, padding:"16px",
+                      boxShadow: cube.rarity.name==="God"
+                        ? "0 0 30px #FFD70044, 0 0 60px #FFD70022"
+                        : cube.rarity.name==="Secret"
+                        ? "0 0 24px #E879F944"
+                        : isMine?`0 0 20px ${cube.rarity.glow}22`:"none",
+                      transition:"all 0.2s", position:"relative", overflow:"hidden",
                     }}>
+                      {/* God shimmer overlay */}
+                      {cube.rarity.name==="God"&&<div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,transparent 30%,#FFD70011 50%,transparent 70%)",backgroundSize:"200% 200%",animation:"godShine 2s ease infinite",pointerEvents:"none",borderRadius:14}}/>}
                       <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:12}}>
-                        <Cube3D cube={cube} size={48} spin={isMine}/>
+                        <Cube3D cube={cube} size={48} spin={isMine||cube.rarity.special}/>
                         <div style={{flex:1}}>
-                          <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:3}}>
-                            <span style={{fontSize:8,fontWeight:800,color:cube.rarity.color,background:cube.rarity.bg+"cc",padding:"2px 6px",borderRadius:4}}>{cube.rarity.name.toUpperCase()}</span>
+                          <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:3,flexWrap:"wrap"}}>
+                            <span style={{
+                              fontSize:8,fontWeight:800,
+                              color: cube.rarity.name==="God"?"#3d2800":cube.rarity.color,
+                              background: cube.rarity.name==="God"?"#FFD700":cube.rarity.name==="Secret"?"#E879F933":cube.rarity.bg+"cc",
+                              padding:"2px 6px",borderRadius:4,
+                            }}>{cube.rarity.name.toUpperCase()}</span>
                             {isMine&&<span style={{fontSize:8,background:"#1e3a5f",color:"#60A5FA",padding:"2px 6px",borderRadius:4,fontWeight:800}}>YOURS</span>}
+                            {listing.isBot&&<span style={{fontSize:8,background:"#0a1a0a",color:"#34D399",padding:"2px 6px",borderRadius:4,fontWeight:800,border:"1px solid #34D39944"}}>🤖 BOT</span>}
                           </div>
-                          <div style={{fontSize:15,fontWeight:900,color:"white",lineHeight:1}}>{cube.name}</div>
+                          <div style={{fontSize:15,fontWeight:900,color:cube.rarity.name==="God"?"#FFD700":cube.rarity.name==="Secret"?"#E879F9":"white",lineHeight:1}}>{cube.name}</div>
                           <div style={{fontSize:9,color:"#6B7280",marginTop:2}}>Lv.{cube.level.toLocaleString()} · +{cube.income}/sec</div>
-                          <div style={{fontSize:10,color:"#9CA3AF",marginTop:2}}>by <span style={{color:"#60A5FA",fontWeight:700}}>{listing.seller}</span></div>
+                          <div style={{fontSize:10,color:"#9CA3AF",marginTop:2}}>
+                            by <span style={{color:listing.isBot?"#34D399":"#60A5FA",fontWeight:700}}>{listing.isBot?"🤖 "+listing.seller:listing.seller}</span>
+                          </div>
                         </div>
                       </div>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                        <div style={{fontSize:18,fontWeight:900,color:"#FBBF24"}}>🪙{listing.price.toLocaleString()}</div>
+                        <div style={{fontSize:18,fontWeight:900,color:cube.rarity.name==="God"?"#FFD700":"#FBBF24"}}>🪙{listing.price.toLocaleString()}</div>
                         {isMine?(
                           <button className="nb" onClick={()=>delistCube(listing)} style={{background:"linear-gradient(135deg,#374151,#1f2937)",color:"#9CA3AF",border:"none",borderRadius:9,padding:"8px 14px",fontSize:11}}>↩ DELIST</button>
                         ):(
@@ -1009,11 +1226,24 @@ function Game({ username, onLogout }) {
       </div>
 
       {/* Rarity legend */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:10,background:"linear-gradient(0deg,#050a14 0%,#050a1488 100%)",borderTop:"1px solid #1e3a5f22",padding:"5px 20px",display:"flex",justifyContent:"center",gap:14}}>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:10,background:"linear-gradient(0deg,#050a14 0%,#050a1488 100%)",borderTop:"1px solid #1e3a5f22",padding:"5px 20px",display:"flex",justifyContent:"center",gap:10,flexWrap:"wrap"}}>
         {RARITIES.map(r=>(
-          <div key={r.name} style={{display:"flex",alignItems:"center",gap:3,fontSize:7,color:r.color}}>
-            <div style={{width:4,height:4,borderRadius:1,background:r.color}}/>
+          <div key={r.name} style={{display:"flex",alignItems:"center",gap:3,fontSize:7,
+            color:r.color,
+            textShadow:r.special?`0 0 6px ${r.glow}`:undefined,
+            fontWeight:r.special?900:400,
+          }}>
+            <div style={{
+              width:r.special?6:4, height:r.special?6:4,
+              borderRadius:r.name==="God"?0:1,
+              background:r.name==="God"?"#FFD700":r.color,
+              boxShadow:r.special?`0 0 5px ${r.glow}`:undefined,
+              transform:r.name==="God"?"rotate(45deg)":undefined,
+              animation:r.name==="Secret"?"secretGlow 2s ease-in-out infinite":r.name==="God"?"godGlow 1.5s ease-in-out infinite":undefined,
+            }}/>
             {r.name.toUpperCase()}
+            {r.name==="God"&&<span style={{fontSize:6}}>👑</span>}
+            {r.name==="Secret"&&<span style={{fontSize:6}}>✦</span>}
           </div>
         ))}
       </div>
